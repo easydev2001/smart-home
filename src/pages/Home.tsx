@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ref, onValue, set } from 'firebase/database'
+import ExcelJS from 'exceljs'
+import { saveAs } from 'file-saver'
 import { database } from '../firebase'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
@@ -13,12 +15,14 @@ type ControlType = {
 type DataType = {
   temperature: number
   humidity: number
-  lightLevel: number
+  ldr: number
+  mq2: number
+  time: Date
 }
 
 function Home() {
   const [control, setControl] = useState<ControlType | null>(null)
-  const [data, setData] = useState<DataType | null>(null)
+  const [data, setData] = useState<DataType[] | null>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -38,30 +42,7 @@ function Home() {
         ...data[key],
       }))
       console.log('🚀 ~ dataArray:', dataArray)
-      // const temp = dataArray.map((item) => [
-      //   item.time.toLocaleString('vi-VN', {
-      //     timeZone: 'Asia/Ho_Chi_Minh',
-      //     hour12: false,
-      //   }),
-      //   item.temperature,
-      // ])
-      // const humid = dataArray.map((item) => [
-      //   item.time.toLocaleString('vi-VN', {
-      //     timeZone: 'Asia/Ho_Chi_Minh',
-      //     hour12: false,
-      //   }),
-      //   item.humidity,
-      // ])
-      // const ph = dataArray.map((item) => [
-      //   item.time.toLocaleString('vi-VN', {
-      //     timeZone: 'Asia/Ho_Chi_Minh',
-      //     hour12: false,
-      //   }),
-      //   item.ph,
-      // ])
-      // setData1([['Thời gian', 'Nhiệt độ'], ...temp])
-      // setData2([['Thời gian', 'Độ ẩm'], ...humid])
-      // setData3([['Thời gian', 'Độ PH'], ...ph])
+      setData(dataArray)
     })
 
     // Cleanup listener when component unmount
@@ -101,6 +82,40 @@ function Home() {
     }
   }
 
+  const handleExcel = async () => {
+    const workbook = new ExcelJS.Workbook()
+    const worksheet = workbook.addWorksheet('Sheet1')
+
+    // Thêm tiêu đề
+    worksheet.columns = [
+      { header: 'Time', key: 'time', width: 40 },
+      { header: 'Temperature', key: 'temperature', width: 20 },
+      { header: 'Humidity', key: 'humidity', width: 20 },
+      { header: 'LDR', key: 'ldr', width: 20 },
+      { header: 'MQ2', key: 'mq2', width: 20 },
+    ]
+
+    // Thêm dữ liệu
+    worksheet.addRows(data || [])
+
+    worksheet.eachRow((row) => {
+      if (row.number % 2 === 0) {
+        row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F5F5F5' } }
+      } else {
+        row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF' } }
+      }
+      row.alignment = { vertical: 'middle', horizontal: 'center' }
+    })
+    // Định dạng header
+    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFF' } }
+    worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '4CAF50' } }
+
+    // Xuất file
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    saveAs(blob, 'Data.xlsx')
+  }
+
   // if data is null, show a loading spinner
   if (!control)
     return (
@@ -138,15 +153,28 @@ function Home() {
               <div className="relative w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
               <span className='ms-3 text-xl font-medium'>Quạt</span>
             </label>
+            <button
+              onClick={handleExcel}
+              className='bg-blue-500 text-white font-semibold py-2 rounded-lg hover:bg-blue-300 w-32'>
+              Xuất data
+            </button>
           </div>
         </div>
         <div className='w-80 bg-white shadow-xl rounded-2xl p-8'>
           <h1 className='text-2xl font-semibold text-center text-orange-600'>Thông số</h1>
-          <div className='flex flex-col gap-6 mt-8'>
-            <p className='text-xl font-medium'>Nhiệt độ: {data?.temperature}°C</p>
-            <p className='text-xl font-medium'>Độ ẩm: {data?.humidity}%</p>
-            <p className='text-xl font-medium'>Ánh sáng: {data?.lightLevel} lux</p>
-          </div>
+          {data && (
+            <>
+              <h1 className='text-xl text-center text-orange-600 mt-2'>
+                {data[data.length - 1].time.toLocaleString()}
+              </h1>
+              <div className='flex flex-col gap-6 mt-8'>
+                <p className='text-xl font-medium'>Nhiệt độ: {data[data.length - 1].temperature}°C</p>
+                <p className='text-xl font-medium'>Độ ẩm: {data[data.length - 1].humidity}%</p>
+                <p className='text-xl font-medium'>LDR: {data[data.length - 1].ldr}</p>
+                <p className='text-xl font-medium'>MQ2: {data[data.length - 1].mq2}</p>
+              </div>
+            </>
+          )}
         </div>
       </div>
       <Footer />
