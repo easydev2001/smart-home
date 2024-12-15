@@ -136,7 +136,7 @@ function Home() {
   return (
     <div className='flex flex-col min-h-screen'>
       <Header />
-      <div className='min-h-screen bg-slate-50 p-4 flex gap-4'>
+      <div className='min-h-screen bg-slate-50 p-4 gap-4 flex flex-col md:flex-row'>
         <div className='flex flex-col items-center gap-4'>
           <div className='w-80 bg-white shadow-xl rounded-2xl p-8'>
             <h1 className='text-2xl font-semibold text-center text-orange-600'>Bảng điều khiển</h1>
