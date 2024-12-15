@@ -6,8 +6,10 @@ import { database } from '../firebase'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import { useNavigate } from 'react-router-dom'
+import MyChart from '../components/Chart'
 
 type ControlType = {
+  Auto: boolean
   Fan: boolean
   Led: boolean
 }
@@ -41,8 +43,8 @@ function Home() {
         time: new Date(Number(key) * 1000),
         ...data[key],
       }))
-      console.log('🚀 ~ dataArray:', dataArray)
       setData(dataArray)
+      console.log(dataArray[dataArray.length - 1])
     })
 
     // Cleanup listener when component unmount
@@ -60,7 +62,7 @@ function Home() {
     })()
   }, [])
 
-  const handleToggle = (e: React.ChangeEvent<HTMLInputElement>, mode: 'led' | 'fan') => {
+  const handleToggle = (e: React.ChangeEvent<HTMLInputElement>, mode: 'led' | 'fan' | 'auto') => {
     const { checked } = e.target
     switch (mode) {
       case 'led':
@@ -75,6 +77,13 @@ function Home() {
         set(ref(database, 'Control'), {
           ...control,
           Fan: checked,
+        })
+        break
+      case 'auto':
+        setControl((prev) => (prev ? { ...prev, Auto: checked } : null))
+        set(ref(database, 'Control'), {
+          ...control,
+          Auto: checked,
         })
         break
       default:
@@ -127,54 +136,76 @@ function Home() {
   return (
     <div className='flex flex-col min-h-screen'>
       <Header />
-      <div className='p-4 flex-1 flex gap-4 flex-wrap items-center justify-center'>
-        <div className='w-80 bg-white shadow-xl rounded-2xl p-8'>
-          <h1 className='text-2xl font-semibold text-center text-orange-600'>Bảng điều khiển</h1>
-          <div className='flex flex-col gap-6 mt-8'>
-            <label className='inline-flex items-center cursor-pointer'>
-              <input
-                type='checkbox'
-                value=''
-                onChange={(e) => handleToggle(e, 'led')}
-                checked={control?.Led}
-                className='sr-only peer'
-              />
-              <div className="relative w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-              <span className='ms-3 text-xl font-medium'>Đèn</span>
-            </label>
-            <label className='inline-flex items-center cursor-pointer'>
-              <input
-                type='checkbox'
-                value=''
-                onChange={(e) => handleToggle(e, 'fan')}
-                checked={control?.Fan}
-                className='sr-only peer'
-              />
-              <div className="relative w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-              <span className='ms-3 text-xl font-medium'>Quạt</span>
-            </label>
-            <button
-              onClick={handleExcel}
-              className='bg-blue-500 text-white font-semibold py-2 rounded-lg hover:bg-blue-300 w-32'>
-              Xuất data
-            </button>
+      <div className='min-h-screen bg-slate-50 p-4 flex gap-4'>
+        <div className='flex flex-col items-center gap-4'>
+          <div className='w-80 bg-white shadow-xl rounded-2xl p-8'>
+            <h1 className='text-2xl font-semibold text-center text-orange-600'>Bảng điều khiển</h1>
+            <div className='flex flex-col gap-6 mt-8'>
+              <label className='inline-flex items-center cursor-pointer'>
+                <input
+                  type='checkbox'
+                  value=''
+                  onChange={(e) => handleToggle(e, 'auto')}
+                  checked={control?.Auto}
+                  className='sr-only peer'
+                />
+                <div className="relative w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                <span className='ms-3 text-xl font-medium'>Chế độ tự động</span>
+              </label>
+              <label className='inline-flex items-center cursor-pointer'>
+                <input
+                  type='checkbox'
+                  disabled={control?.Auto}
+                  value=''
+                  onChange={(e) => handleToggle(e, 'led')}
+                  checked={control?.Led}
+                  className='sr-only peer'
+                />
+                <div
+                  className={`relative w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 ${
+                    control?.Auto ? 'opacity-30 cursor-default' : ''
+                  }`}></div>
+                <span className='ms-3 text-xl font-medium'>Đèn</span>
+              </label>
+              <label className='inline-flex items-center cursor-pointer'>
+                <input
+                  type='checkbox'
+                  value=''
+                  onChange={(e) => handleToggle(e, 'fan')}
+                  checked={control?.Fan}
+                  className='sr-only peer'
+                />
+                <div className="relative w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                <span className='ms-3 text-xl font-medium'>Quạt</span>
+              </label>
+              <button
+                onClick={handleExcel}
+                className='bg-blue-500 text-white font-semibold py-2 rounded-lg hover:bg-blue-300 w-32'>
+                Xuất data
+              </button>
+            </div>
+          </div>
+          <div className='w-80 bg-white shadow-xl rounded-2xl p-8'>
+            <h1 className='text-2xl font-semibold text-center text-orange-600'>Thông số</h1>
+            {data && (
+              <>
+                <h1 className='text-xl text-center text-orange-600 mt-2'>
+                  {data[data.length - 1].time.toLocaleString()}
+                </h1>
+                <div className='flex flex-col gap-6 mt-8'>
+                  <p className='text-xl font-medium'>Nhiệt độ: {data[data.length - 1].temperature}°C</p>
+                  <p className='text-xl font-medium'>Độ ẩm: {data[data.length - 1].humidity}%</p>
+                  <p className='text-xl font-medium'>
+                    LDR: {data[data.length - 1].ldr === 1 ? 'Trời tối' : 'Trời sáng'}
+                  </p>
+                  <p className='text-xl font-medium'>MQ2: {data[data.length - 1].mq2}</p>
+                </div>
+              </>
+            )}
           </div>
         </div>
-        <div className='w-80 bg-white shadow-xl rounded-2xl p-8'>
-          <h1 className='text-2xl font-semibold text-center text-orange-600'>Thông số</h1>
-          {data && (
-            <>
-              <h1 className='text-xl text-center text-orange-600 mt-2'>
-                {data[data.length - 1].time.toLocaleString()}
-              </h1>
-              <div className='flex flex-col gap-6 mt-8'>
-                <p className='text-xl font-medium'>Nhiệt độ: {data[data.length - 1].temperature}°C</p>
-                <p className='text-xl font-medium'>Độ ẩm: {data[data.length - 1].humidity}%</p>
-                <p className='text-xl font-medium'>LDR: {data[data.length - 1].ldr}</p>
-                <p className='text-xl font-medium'>MQ2: {data[data.length - 1].mq2}</p>
-              </div>
-            </>
-          )}
+        <div className='flex flex-col flex-1 gap-4 bg-white rounded-md shadow-md'>
+          <MyChart />
         </div>
       </div>
       <Footer />

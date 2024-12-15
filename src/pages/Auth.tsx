@@ -46,7 +46,7 @@ const Auth = () => {
             src='https://flowbite.s3.amazonaws.com/blocks/marketing-ui/logo.svg'
             alt='logo'
           />
-          Hệ thống XYZ
+          Hệ thống cảm biến áp dụng trong nhà thông minh
         </a>
         <div className='w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 '>
           <div className='p-6 space-y-4 md:space-y-6 sm:p-8'>
